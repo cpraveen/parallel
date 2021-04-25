@@ -1,2 +1,4 @@
-# parallel
-Tutorial codes on parallel programming
+# Tutorial codes on parallel programming
+
+ * Openmp
+ * MPI
