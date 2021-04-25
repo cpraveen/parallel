@@ -1,3 +1,4 @@
+! Compute integral(x=a to x=b) f(x)
 program main
    use MPI
    implicit none
@@ -23,7 +24,7 @@ program main
    ! rank 0 collects partial results
    if(rank.eq.0) then
       print*,'Number of procs =', size
-      res=psum
+      res = psum
       do i=1,size-1
          call MPI_Recv(tmp, &
                        1,&
@@ -33,7 +34,7 @@ program main
                        MPI_COMM_WORLD,&       ! communicator
                        status,&               ! status array (msg info)
                        ierror)
-         res=res+tmp
+         res = res + tmp
       enddo
       write(*,*) 'Result: ',res
    ! ranks != 0 send their results to rank 0
@@ -50,8 +51,8 @@ program main
 end program main
 
 ! Return integral of cos(x) from x=a to x=b
-double precision function integrate(a, b)
+function integrate(a, b)
    implicit none
-   double precision :: a, b
+   double precision :: a, b, integrate
    integrate = sin(b) - sin(a)
 end function integrate

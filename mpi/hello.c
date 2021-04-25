@@ -2,13 +2,13 @@
 #include <mpi.h>
 
 int main(int argc, char** argv) {
-   int rank, size;
+   int rank, size, ierror;
 
-   MPI_Init(&argc, &argv);
-   MPI_Comm_size(MPI_COMM_WORLD, &size);
-   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   ierror = MPI_Init(&argc, &argv);
+   ierror = MPI_Comm_size(MPI_COMM_WORLD, &size);
+   ierror = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-   printf("Hello World, I am %d of %d\n", rank, size);
-   MPI_Finalize();
+   printf("Hello World, I am rank %d of %d procs\n", rank, size);
+   ierror = MPI_Finalize();
    return 0;
 }

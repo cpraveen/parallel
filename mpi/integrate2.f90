@@ -53,8 +53,8 @@ program main
 end program main
 
 ! Return integral of cos(x) from x=a to x=b
-double precision function integrate(a, b)
+function integrate(a, b)
    implicit none
-   double precision :: a, b
+   double precision :: a, b, integrate
    integrate = sin(b) - sin(a)
 end function integrate
