@@ -3,7 +3,6 @@ program main
    implicit none
    integer :: size, rank, i, ierror
    double precision :: a, b, res, mya, myb, psum
-   double precision, parameter :: pi = 4.0d0 * atan(1.0d0)
    integer, allocatable, dimension(:,:) :: statuses
    integer, allocatable, dimension(:) :: requests
    double precision, allocatable, dimension(:) :: tmp
@@ -14,7 +13,7 @@ program main
    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierror)
 
    ! integration limits
-   a = 0.0d0 ; b = 2.0d0 * pi ; res = 0.0d0
+   a = 0.0d0 ; b = 2.0d0 ; res = 0.0d0
 
    if(rank.eq.0) then
       allocate(statuses(MPI_STATUS_SIZE, size-1))

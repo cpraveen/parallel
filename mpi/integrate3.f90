@@ -3,7 +3,6 @@ program main
    implicit none
    integer :: size, rank, i, ierror
    double precision :: a, b, res, mya, myb, psum
-   double precision, parameter :: pi = 4.0d0 * atan(1.0d0)
    double precision, external :: integrate
 
    call MPI_Init(ierror)

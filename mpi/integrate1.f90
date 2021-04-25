@@ -4,7 +4,6 @@ program main
    implicit none
    integer :: size, rank, i, ierror
    double precision :: a, b, res, mya, myb, psum, tmp
-   double precision, parameter :: pi = 4.0d0 * atan(1.0d0)
    integer, dimension(MPI_STATUS_SIZE) :: status
    double precision, external :: integrate
 
@@ -13,7 +12,7 @@ program main
    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierror)
 
    ! integration limits
-   a = 0.0d0 ; b = 2.0d0 * pi ; res = 0.0d0
+   a = 0.0d0 ; b = 2.0d0 ; res = 0.0d0
 
    ! limits for "me"
    mya = a + rank*(b-a)/size
