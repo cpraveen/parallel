@@ -2,14 +2,14 @@
 program main
    use MPI
    implicit none
-   integer :: size, rank, i, ierror
+   integer :: size, rank, i, ierr
    double precision :: a, b, res, mya, myb, psum, tmp
    integer, dimension(MPI_STATUS_SIZE) :: status
    double precision, external :: integrate
 
-   call MPI_Init(ierror)
-   call MPI_Comm_size(MPI_COMM_WORLD, size, ierror)
-   call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierror)
+   call MPI_Init(ierr)
+   call MPI_Comm_size(MPI_COMM_WORLD, size, ierr)
+   call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
 
    ! integration limits
    a = 0.0d0 ; b = 2.0d0 ; res = 0.0d0
@@ -32,7 +32,7 @@ program main
                        0, &                   ! tag (unused here)
                        MPI_COMM_WORLD,&       ! communicator
                        status,&               ! status array (msg info)
-                       ierror)
+                       ierr)
          res = res + tmp
       enddo
       write(*,*) 'Result: ',res
@@ -43,10 +43,10 @@ program main
                     MPI_DOUBLE_PRECISION,&
                     0, &                   ! rank of destination
                     0, &                   ! tag (unused here)
-                    MPI_COMM_WORLD,ierror)
+                    MPI_COMM_WORLD,ierr)
    endif
 
-   call MPI_Finalize(ierror)
+   call MPI_Finalize(ierr)
 end program main
 
 ! Return integral of cos(x) from x=a to x=b

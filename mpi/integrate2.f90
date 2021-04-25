@@ -1,16 +1,16 @@
 program main
    use MPI
    implicit none
-   integer :: size, rank, i, ierror
+   integer :: size, rank, i, ierr
    double precision :: a, b, res, mya, myb, psum
    integer, allocatable, dimension(:,:) :: statuses
    integer, allocatable, dimension(:) :: requests
    double precision, allocatable, dimension(:) :: tmp
    double precision, external :: integrate
 
-   call MPI_Init(ierror)
-   call MPI_Comm_size(MPI_COMM_WORLD, size, ierror)
-   call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierror)
+   call MPI_Init(ierr)
+   call MPI_Comm_size(MPI_COMM_WORLD, size, ierr)
+   call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
 
    ! integration limits
    a = 0.0d0 ; b = 2.0d0 ; res = 0.0d0
@@ -23,7 +23,7 @@ program main
       do i=1,size-1
          call MPI_Irecv(tmp(i), 1, MPI_DOUBLE_PRECISION, &
                         i, 0, MPI_COMM_WORLD,       &
-                        requests(i), ierror)
+                        requests(i), ierr)
       enddo
    endif
    ! limits for "me"
@@ -36,7 +36,7 @@ program main
    ! rank 0 collects partial results
    if(rank.eq.0) then
       res = psum
-      call MPI_Waitall(size-1, requests, statuses, ierror)
+      call MPI_Waitall(size-1, requests, statuses, ierr)
       do i=1,size-1
          res = res + tmp(i)
       enddo
@@ -45,10 +45,10 @@ program main
    else
       call MPI_Send(psum, 1, &
                     MPI_DOUBLE_PRECISION, 0, 0, &
-                    MPI_COMM_WORLD,ierror)
+                    MPI_COMM_WORLD,ierr)
    endif
 
-   call MPI_Finalize(ierror)
+   call MPI_Finalize(ierr)
 end program main
 
 ! Return integral of cos(x) from x=a to x=b
