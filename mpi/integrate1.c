@@ -10,6 +10,7 @@ double integrate(double a, double b)
 
 // Compute integral(x=a to x=b) f(x)
 int main(int argc, char** argv)
+{
    int size, rank, i, ierr;
    double a, b, res, mya, myb, psum, tmp;
    MPI_Status status;
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
                   &status);             // status array (msg info)
          res += tmp;
       }
-      printf("Result: %e\n",res);
+      printf("Result: %20.14e\n",res);
    }
    // ranks != 0 send their results to rank 0
    else
