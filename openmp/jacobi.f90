@@ -20,16 +20,15 @@ program main
    do while(maxdelta.gt.eps)
       maxdelta = 0.d0
 !$OMP PARALLEL DO REDUCTION(max:maxdelta)
-      do k = 2, N-1
-         do i = 2, N-1
+      do k=2,N-1
+         do i=2,N-1
             ! four flops, one store, four loads
             phi(i,k,t1) = ( phi(i+1,k,t0) + phi(i-1,k,t0) &
-                        + phi(i,k+1,t0) + phi(i,k-1,t0) &
-                        + h**2 * rhs(i,k)) * 0.25
+                          + phi(i,k+1,t0) + phi(i,k-1,t0) &
+                          + h**2 * rhs(i,k)) * 0.25
             maxdelta = max(maxdelta, abs(phi(i,k,t1)-phi(i,k,t0)))
          enddo
       enddo
-
 !$OMP END PARALLEL DO
       ! swap arrays
       i = t0 ; t0 = t1 ; t1 = i
