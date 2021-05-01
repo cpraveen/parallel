@@ -16,32 +16,35 @@ program main
    integer :: myid_grid, nump_grid, tmp, t0, t1
    integer :: iStart, jStart, kStart, iEnd, jEnd, kEnd, MaxBufLen
    integer :: source, dest, dir, disp, iter, udim(2,3)
-   double precision,parameter :: eps = 1.0d-10
-   double precision :: maxdelta, h
+   double precision :: eps, maxdelta, h
    double precision,allocatable :: phi(:,:,:,:), fieldSend(:), fieldRecv(:)
 
    call MPI_Init(ierr)
    call MPI_Comm_rank(MPI_COMM_WORLD, myid, ierr)
    call MPI_Comm_size(MPI_COMM_WORLD, numprocs, ierr)
    if(myid.eq.0) then
-      !write(*,*) ' spat_dim , proc_dim, PBC ? '
-      !do i=1,3
-      !   read(*,*) spat_dim(i), proc_dim(i), pbc_check(i)
-      !enddo
-      spat_dim = [100, 100, 100] ! TODO: need same grid size in all dirs for now
-      pbc_check = [.false., .false., .false.] ! Dirichlet bc
-      proc_dim = [2, 2, 1]
+      open(10,file='poisson3d.in',status='old')
+      read(10,*) tmp
+      read(10,*) proc_dim(1), proc_dim(2), proc_dim(3)
+      read(10,*) itermax
+      read(10,*) eps
+      close(10)
       if(numprocs .ne. proc_dim(1)*proc_dim(2)*proc_dim(3))then
          print*,'Total procs cannot to factorized'
          print*,'Total procs = ', numprocs
          print*,'Proc grid   = ', proc_dim(:)
          call MPI_Abort(MPI_COMM_WORLD, tmp, ierr)
       endif
+      spat_dim = [tmp, tmp, tmp]
+      pbc_check = [.false., .false., .false.] ! Dirichlet bc
    endif
 
+   ! Send parameters to all ranks
    call MPI_Bcast(spat_dim , 3, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
    call MPI_Bcast(proc_dim , 3, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
    call MPI_Bcast(pbc_check, 3, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
+   call MPI_Bcast(itermax  , 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+   call MPI_Bcast(eps      , 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
 
    call MPI_Dims_create(numprocs, 3, proc_dim, ierr)
 
@@ -51,14 +54,20 @@ program main
    if(myid.eq.0)then
        write(*,'(a,3(i3,x))') 'Spatial Grid: ', (spat_dim(i),i=1,3)
        write(*,'(a,3(i3,x))') 'MPI     Grid: ', (proc_dim(i),i=1,3)
-       write(*,'(a,e12.4)')   'Spatial    h: ', h
+       write(*,'(a,e12.4)')   'Spatial h   : ', h
+       write(*,'(a,i6)')      'itermax     : ', itermax
+       write(*,'(a,e12.4)')   'eps         : ', eps
    endif
 
    l_reorder = .true.
    call MPI_Cart_create(MPI_COMM_WORLD, 3, proc_dim, pbc_check, &
                         l_reorder, GRID_COMM_WORLD, ierr)
 
-   if(GRID_COMM_WORLD .eq. MPI_COMM_NULL) goto 9
+   if(GRID_COMM_WORLD .eq. MPI_COMM_NULL)then
+      if(myid.eq.0) print*,'Failed to create GRID_COMM_WORLD'
+      call MPI_Abort(MPI_COMM_WORLD, tmp, ierr)
+   endif
+
    call MPI_Comm_rank(GRID_COMM_WORLD, myid_grid, ierr)
    call MPI_Comm_size(GRID_COMM_WORLD, nump_grid, ierr)
 
@@ -117,10 +126,11 @@ program main
    phi = 0.0d0
 
    ! Start iterations
-   itermax = 100000
+   maxdelta = 2.0d0 * eps
    t0 = 0 ; t1 = 1
    tag = 0
-   do iter = 1, ITERMAX
+   iter = 0
+   do while(iter < ITERMAX .and. maxdelta > eps)
       do disp = -1, 1, 2
          do dir = 1, 3
             call MPI_Cart_shift(GRID_COMM_WORLD, (dir-1), &
@@ -149,19 +159,18 @@ program main
          enddo ! dir
       enddo   ! disp
 
-      call Jacobi_sweep(loca_dim(1), loca_dim(2), loca_dim(3), & 
+      call Jacobi_sweep(loca_dim(3), loca_dim(2), loca_dim(1), & 
                         phi(iStart, jStart, kStart, 0), t0, t1, &
                         udim, h, maxdelta)
 
       call MPI_Allreduce(MPI_IN_PLACE, maxdelta, 1, & 
                          MPI_DOUBLE_PRECISION, &
                          MPI_MAX, GRID_COMM_WORLD, ierr)
+      iter = iter + 1
       if(myid.eq.0) print*,iter,maxdelta
-      if(maxdelta < eps) goto 9
       tmp=t0; t0=t1; t1=tmp ! swap solution values
-   enddo   ! iter
+   enddo  ! iter
 
-9  continue
    call MPI_Finalize(ierr)
 end program main
 
@@ -272,7 +281,7 @@ end subroutine CopyRecvBuf
 !------------------------------------------------------------------------------
 ! Perform one iteration of Jacobi
 !------------------------------------------------------------------------------
-subroutine Jacobi_sweep(nz, ny, nx, phi, t0, t1, udim, h, maxdelta)
+subroutine Jacobi_sweep(nx, ny, nz, phi, t0, t1, udim, h, maxdelta)
    implicit none
    integer :: nx, ny, nz, udim(2,3)
    double precision :: phi(0:nx+1,0:ny+1,0:nz+1,0:1)

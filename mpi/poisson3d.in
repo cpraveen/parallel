@@ -1,0 +1,4 @@
+100          grid: N x N x N
+2  2  1      mpi grid: k x j x i
+10000        max iterations
+1.0d-10      tolerance
