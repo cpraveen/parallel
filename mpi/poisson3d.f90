@@ -22,6 +22,7 @@ program main
    call MPI_Init(ierr)
    call MPI_Comm_rank(MPI_COMM_WORLD, myid, ierr)
    call MPI_Comm_size(MPI_COMM_WORLD, numprocs, ierr)
+   ! Read parameters from file on rank=0
    if(myid.eq.0) then
       open(10,file='poisson3d.in',status='old')
       read(10,*) tmp
@@ -100,7 +101,6 @@ program main
    totmsgsize(1) = loca_dim(2)*loca_dim(3)
    MaxBufLen = max(MaxBufLen,totmsgsize(1))
 
-   if(myid.eq.0) print*,'MaxBufLen = ', MaxBufLen
    allocate(fieldSend(1:MaxBufLen))
    allocate(fieldRecv(1:MaxBufLen))
 
@@ -171,9 +171,12 @@ program main
       tmp=t0; t0=t1; t1=tmp ! swap solution values
    enddo  ! iter
 
+   deallocate(phi, fieldSend, fieldRecv)
    call MPI_Finalize(ierr)
 end program main
 
+!------------------------------------------------------------------------------
+! One layer of halo cells
 !------------------------------------------------------------------------------
 subroutine CopySendBuf(phi, iStart, iEnd, jStart, jEnd, kStart, kEnd, &
                        disp, dir, fieldSend, MaxBufLen)
@@ -226,6 +229,8 @@ subroutine CopySendBuf(phi, iStart, iEnd, jStart, jEnd, kStart, kEnd, &
 
 end subroutine CopySendBuf
 
+!------------------------------------------------------------------------------
+! One layer of halo cells
 !------------------------------------------------------------------------------
 subroutine CopyRecvBuf(phi, iStart, iEnd, jStart, jEnd, kStart, kEnd, &
                        disp, dir, fieldRecv, MaxBufLen)
