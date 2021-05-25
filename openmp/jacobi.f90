@@ -26,7 +26,7 @@ program main
 
    do while(maxdelta.gt.eps)
       maxdelta = 0.d0
-!$OMP PARALLEL DO REDUCTION(max:maxdelta)
+!$OMP PARALLEL DO COLLAPSE(2) REDUCTION(max:maxdelta)
       do k=2,N-1
          do i=2,N-1
             ! four flops, one store, four loads
