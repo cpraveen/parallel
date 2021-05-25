@@ -4,12 +4,19 @@
 program main
    use omp_lib
    implicit none
-   integer,parameter :: N = 100
+   integer,parameter :: N = 500
    double precision, dimension(1:N,1:N,0:1) :: phi
    double precision, dimension(1:N,1:N) :: rhs
    double precision :: maxdelta, eps, h
    integer :: i, k, t0,t1, iter
-   eps = 1.0d-14 ! convergence threshold
+
+!$OMP PARALLEL
+   if(omp_get_thread_num() == 0) then
+      print*,'Number of threads = ', omp_get_num_threads()
+   endif
+!$OMP END PARALLEL
+
+   eps = 1.0d-10 ! convergence threshold
    h   = 1.0 / (N-1)
    t0 = 0; t1 = 1; iter = 0
    maxdelta = 2.0d0*eps
