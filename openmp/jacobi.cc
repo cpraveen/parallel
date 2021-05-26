@@ -1,3 +1,6 @@
+// Solve
+//    -Laplace(u) = 1  in  (0,1)x(0,1)
+//              u = 0  on  boundary
 #include <iostream>
 #include <cmath>
 #include <omp.h>
