@@ -14,7 +14,7 @@ int main()
       b[i] = 2*i;
    }
 
-   #pragma omp parallel
+   #pragma omp parallel for
    for(int i=0; i<n; ++i)
    {
       c[i] = a[i] + b[i];
