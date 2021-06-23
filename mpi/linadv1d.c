@@ -1,3 +1,7 @@
+/* Solves linear advection equation
+             u_t + a u_x = 0
+   with periodic bc and using MPI
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,7 +71,7 @@ void save_solution(int rank, int n1, double* x, double* u)
    ++count;
 }
 
-// Grid of n points is constructed such that
+// Grid of n points is constructed in the domain [xmin,xmax] such that
 // x[0]   = xmin
 // x[n-1] = xmax - dx
 int main(int argc, char** argv)
