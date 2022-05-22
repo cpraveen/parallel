@@ -13,6 +13,7 @@ double initial_condition(double x)
    return sin(8.0 * M_PI * x);
 }
 
+// Fill ghost values by fetching from the owning rank
 void get_ghost_values(double size, double rank, int n1, double* u)
 {
    int left, right;
@@ -50,6 +51,7 @@ void get_ghost_values(double size, double rank, int n1, double* u)
    MPI_Waitall(4, request, status);
 }
 
+// Each rank saves only its own part of the solution
 void save_solution(int rank, int n1, double* x, double* u)
 {
    static int count = 0;
