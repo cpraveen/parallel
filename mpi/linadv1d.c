@@ -92,17 +92,21 @@ int main(int argc, char** argv)
    dx = (xmax - xmin)/n;
    dt = cfl * fabs(a) * dx;
 
-   // find local grid size and local domain
+   // n1 = local grid size, excluding ghosts
+   // [xmin1,xmax1] = local domain
    n1 = n / size;
    xmin1 = xmin + dx * rank * n1;
+   // if size does not exactly divide n, then last rank will have different
+   // number of cells
    if(rank == size-1) n1 = n - (size-1)*n1;
    xmax1 = xmin1 + dx * n1;
 
+   // One ghost at left and one at right
    x    = (double*)malloc((n1+2) * sizeof(double));
    u    = (double*)malloc((n1+2) * sizeof(double));
    unew = (double*)malloc((n1+2) * sizeof(double));
 
-   // set initial condition
+   // set initial condition in real cells
    for(i=1; i<=n1; ++i)
    {
       x[i] = xmin1 + (i-1) * dx;
