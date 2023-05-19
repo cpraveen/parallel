@@ -20,7 +20,7 @@ mpirun -np 4 ./hello
 
 ## integrate1, using blocking send/recv
 
-In this example, we compute the integral of cos(x) on [a,b]. We break the integral for as many ranks we have and compute integrals on each sub-interval. Then each rank sends its own result to the root process, where all the sub-integrals are added up to get the full integral.
+In this example, we compute the integral of cos(x) on [a,b]. We break the interval into as many ranks we have and compute integrals on each sub-interval. Then each rank sends its own result to the root process, where all the sub-integrals are added up to get the full integral.
 
 Compile
 
