@@ -131,6 +131,16 @@ program main
    tag = 0
    iter = 0
    do while(iter < ITERMAX .and. maxdelta > eps)
+      ! Each rank has at most two neighbours in every direction.
+      ! Each rank sends data to one neighbour and receives from the other.
+      !
+      !     |-----|         |-----|         |-----|
+      !  <--|  B  |<--   <--|  A  |<--   <--|  C  |<--
+      !     |-----|         |-----|         |-----|
+      !
+      ! A sends to B and receives from C. At the same time B is waiting to 
+      ! receive from A, and C is sending to A. Thus communication happens in
+      ! correct order.
       do disp = -1, 1, 2
          do dir = 1, 3
             call MPI_Cart_shift(GRID_COMM_WORLD, (dir-1), &
@@ -242,8 +252,8 @@ subroutine CopyRecvBuf(phi, iStart, iEnd, jStart, jEnd, kStart, kEnd, &
    integer :: i1, i2, j1, j2, k1, k2, c
    integer :: i, j, k
 
-   if(dir < 1 .or. dir > 3) stop 'CopySendBuf: dir is wrong'
-   if(disp /= -1 .and. disp /= 1) stop 'CopySendBuf: disp is wrong'
+   if(dir < 1 .or. dir > 3) stop 'CopyRecvBuf: dir is wrong'
+   if(disp /= -1 .and. disp /= 1) stop 'CopyRecvBuf: disp is wrong'
 
    if(dir == 1)then ! i-j plane
       i1 = iStart+1; i2 = iEnd-1
