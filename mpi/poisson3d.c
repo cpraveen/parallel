@@ -35,6 +35,16 @@ void Jacobi_sweep(int iStart, int iEnd, int jStart, int jEnd, int kStart, int kE
                   int t0, int t1, int udim[2][3], double h,
                   double *maxdelta);
 
+// Keep reading characters until new line is encountered.
+// We use this to skip comments in the input file.
+void skip(FILE *fp)
+{
+   char c;
+   while((c=getc(fp)) != '\n')
+   {
+   }
+}
+
 int main(int argc, char *argv[]) {
   // Mark whether boundaries are periodic or not
   int pbc_check[3];
@@ -78,9 +88,9 @@ int main(int argc, char *argv[]) {
     printf("Reading poisson3d.in\n");
     FILE *fp;
     fp = fopen("poisson3d.in", "r");
-    fscanf(fp, "%d", &tmp);
-    fscanf(fp, "%d%d%d", &proc_dim[0], &proc_dim[1], &proc_dim[2]);
-    fscanf(fp, "%d", &itermax);
+    fscanf(fp, "%d", &tmp); skip(fp);
+    fscanf(fp, "%d%d%d", &proc_dim[0], &proc_dim[1], &proc_dim[2]); skip(fp);
+    fscanf(fp, "%d", &itermax); skip(fp);
     fscanf(fp, "%lf", &eps);
     fclose(fp);
 
@@ -297,7 +307,7 @@ int main(int argc, char *argv[]) {
 
     ++iter;
     if (myid == 0) {
-      printf("%d %e\n", iter, maxdelta);
+      printf("%12d %24.16e\n", iter, maxdelta);
     }
     // New becomes old
     tmp = t0; t0 = t1; t1 = tmp;
