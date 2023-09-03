@@ -327,11 +327,11 @@ void CopySendBuf(int iStart, int iEnd, int jStart,
   int i1, i2, j1, j2, k1, k2, c;
 
   if (dir < 0 || dir > 2) {
-    printf("CSB: dir is wrong\n");
+    printf("CopySendBuf: dir is wrong\n");
     exit(1);
   }
   if (disp != 1 && disp != -1) {
-    printf("CSB: disp is wrong\n");
+    printf("CopySendBuf: disp is wrong\n");
     exit(1);
   }
 
@@ -392,11 +392,11 @@ void CopyRecvBuf(int iStart, int iEnd, int jStart,
   int i1, i2, j1, j2, k1, k2, c;
 
   if (dir < 0 || dir > 2) {
-    printf("CRB: dir is wrong\n");
+    printf("CopyRecvBuf: dir is wrong\n");
     exit(1);
   }
   if (disp != 1 && disp != -1) {
-    printf("CRB: disp is wrong\n");
+    printf("CopyRecvBuf: disp is wrong\n");
     exit(1);
   }
 
