@@ -39,8 +39,7 @@ void Jacobi_sweep(int iStart, int iEnd, int jStart, int jEnd, int kStart, int kE
 // We use this to skip comments in the input file.
 void skip(FILE *fp)
 {
-   char c;
-   while((c=getc(fp)) != '\n')
+   while(getc(fp) != '\n')
    {
    }
 }
@@ -48,7 +47,7 @@ void skip(FILE *fp)
 int main(int argc, char *argv[]) {
   // Mark whether boundaries are periodic or not
   int pbc_check[3];
-  // Number of cells in each dimension
+  // Number of points in each dimension
   int spat_dim[3];
   // Number of processes in each dimension
   int proc_dim[3];
@@ -103,7 +102,7 @@ int main(int argc, char *argv[]) {
       ierr = MPI_Abort(MPI_COMM_WORLD, tmp);
     }
 
-    // Number of cells along each dimension.
+    // Number of points along each dimension.
     spat_dim[0] = spat_dim[1] = spat_dim[2] = tmp;
 
     // Don't treat boundaries as periodic along any dimension
@@ -121,7 +120,7 @@ int main(int argc, char *argv[]) {
   ierr = MPI_Dims_create(numprocs, 3, proc_dim);
 
   // Assuming dx = dy = dz, so no need for separate hx, hy, hz
-  // Minus 1 because the last cell will be at the end
+  // Minus 1 because the last point will be at the end
   h = 1.0 / (spat_dim[0] - 1);
 
   if (myid == 0) {
@@ -155,7 +154,7 @@ int main(int argc, char *argv[]) {
 
   // loca_dim is the grid size assigned to each current rank
   for (int i = 0; i < 3; ++i) {
-    // Number of cells along i'th dimension divided by number of ranks along
+    // Number of points along i'th dimension divided by number of ranks along
     // that dimension This is truncated division, a/b = a//b * b + a%b
     loca_dim[i] = spat_dim[i] / proc_dim[i];
 
@@ -168,7 +167,7 @@ int main(int argc, char *argv[]) {
   // Solution variables
   // One layer of ghost points on all sides, so 2 extra indices
   // These are the first and last indices along each dir.
-  // So iEnd is the number (count) of cells along each dimension, not last
+  // So iEnd is the number (count) of points along each dimension, not last
   // index.
   iStart = 0;
   iEnd = loca_dim[0] + 2;
@@ -221,19 +220,19 @@ int main(int argc, char *argv[]) {
     // communicated by NULL
     if (dest != MPI_PROC_NULL) {
       // We have a neighbour on the left.
-      // So we can update every cell, starting from 1, skipping the halo cell
+      // So we can update every point, starting from 1, skipping the halo point
       udim[0][dir] = 1;
     } else
       // When no neighbour on the left.
-      // This means this cell is on the boundary for this dir.
-      // So skip over first two cells, because halo is now meaningless,
-      // and the next cell is zero by Dirichlet BC, so no need to update.
+      // This means this point is on the boundary for this dir.
+      // So skip over first two points, because halo is now meaningless,
+      // and the next point is zero by Dirichlet BC, so no need to update.
       udim[0][dir] = 2;
 
     if (source != MPI_PROC_NULL)
       // Neighbour on the right, so index is the last one
-      // loca_dim + 2 is the number of cells, so -1 will be the index of the
-      // last cell so -2 will be the last non-halo cell.
+      // loca_dim + 2 is the number of points, so -1 will be the index of the
+      // last point so -2 will be the last non-halo point.
       udim[1][dir] = loca_dim[dir] + 2 - 2;
     else
       // No neighbour, Dirichlet BC, so no need to update the very last
@@ -317,7 +316,7 @@ int main(int argc, char *argv[]) {
   return ierr;
 }
 
-// copies a face of phi (and not the layer of halo cells)
+// copies a face of phi (and not the layer of halo points)
 // into a linear array.
 void CopySendBuf(int iStart, int iEnd, int jStart,
                  int jEnd, int kStart, int kEnd, 
@@ -383,7 +382,7 @@ void CopySendBuf(int iStart, int iEnd, int jStart,
       }
 }
 
-// Copy into the halo cells of phi the values in the 1D receive buffer
+// Copy into the halo points of phi the values in the 1D receive buffer
 void CopyRecvBuf(int iStart, int iEnd, int jStart,
                  int jEnd, int kStart, int kEnd, 
                  double phi[iEnd-iStart][jEnd-jStart][kEnd-kStart],
@@ -407,7 +406,7 @@ void CopyRecvBuf(int iStart, int iEnd, int jStart,
     j1 = jStart + 1;
     j2 = jEnd - 2;
 
-    // We are receiving into the halo cells on the correct face
+    // We are receiving into the halo points on the correct face
     if (disp == 1)
       // receiving from above
       k1 = k2 = 0;

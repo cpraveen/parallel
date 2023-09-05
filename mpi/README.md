@@ -75,3 +75,5 @@ Solves Poisson equation in 3d using Jacobi method. Set some parameters in `poiss
 mpif90 -o poisson3d poisson3d.f90
 mpirun -np 4 ./poisson3d
 ```
+
+There is also a C version in `poisson3d.c`.
