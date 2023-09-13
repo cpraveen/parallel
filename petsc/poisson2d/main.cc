@@ -13,6 +13,8 @@
 #include <petscviewerhdf5.h>
 #include <stdio.h>
 
+using namespace std;
+
 //------------------------------------------------------------------------------
 // Application context to store some data
 struct AppCtx
@@ -23,11 +25,8 @@ struct AppCtx
   DMDACoor2d **coord;
 };
 
-PetscErrorCode viewerOutput(DM da, Vec u, PetscInt iter);
-PetscErrorCode writeVTK(DM da, Vec u_global, DM cda, Vec clocal,
-                                      PetscInt iter, PetscReal t, PetscInt c);
-
-PetscErrorCode savesol(int *c, DM);
+PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global, 
+                        PetscInt iter, PetscReal t, PetscInt c);
 
 //------------------------------------------------------------------------------
 PetscReal rhs(PetscInt x, PetscInt y) 
@@ -180,7 +179,7 @@ int main(int argc, char *argv[])
   PetscCall(set_initial_guess(&ctx, da, u_global));
 
   // Save initial condition.
-  writeVTK(da, u_global, cda, clocal, 0, 0, 0);
+  writeVTK(&ctx, da, u_global, 0, 0, 0);
 
   /* ----------------------------
    * END OF SETUP
@@ -216,14 +215,14 @@ int main(int argc, char *argv[])
                           maxdelta));
   }
   // Save the last one.
-  writeVTK(da, u_global, cda, clocal, 1, 0, 0);
+  writeVTK(&ctx, da, u_global, 1, 0, 0);
 
   /* ----------------
    * END OF ITER
    * BEGIN CLEANUP
    * ----------------
    */
-  PetscCall(DMDAVecRestoreArrayRead(cda, clocal, &alc));
+  PetscCall(DMDAVecRestoreArrayRead(cda, clocal, &ctx.coord));
   // Always a good idea to destroy everything.
   PetscCall(VecDestroy(&u_global));
   // Do NOT destroy clocal, it is a borrowed vector. It goes when the DM goes.
@@ -236,72 +235,19 @@ int main(int argc, char *argv[])
 }
 
 //------------------------------------------------------------------------------
-/*
- * Uses the VecView function to create a file in the required format
- */
-PetscErrorCode savesol(int *c, DM da)
-{
-  PetscInt id;
-  MPI_Comm_rank(PETSC_COMM_WORLD, &id);
-  PetscErrorCode ierr;
-  char           filename[32] = "sol";
-  PetscViewer    viewer;
-  sprintf(filename, "sol-%d-%03d.h5", id, *c);
-  ierr =
-      PetscViewerHDF5Open(PETSC_COMM_SELF, filename, FILE_MODE_WRITE, &viewer);
-  CHKERRQ(ierr);
-  Vec ul;
-  PetscCall(DMGetLocalVector(da, &ul));
-  ierr = VecView(ul, viewer);
-  CHKERRQ(ierr);
-  PetscCall(DMRestoreLocalVector(da, &ul));
-  ierr = PetscViewerDestroy(&viewer);
-  CHKERRQ(ierr);
-  return (0);
-}
-
-//------------------------------------------------------------------------------
-PetscErrorCode viewerOutput(DM da, Vec u_global, PetscInt iter)
-{
-#if defined(PETSC_HAVE_HDF5)
-  PetscFunctionBeginUser;
-  PetscInt id;
-  MPI_Comm_rank(PETSC_COMM_WORLD, &id);
-  char filename[64];
-  snprintf(filename, 64, "sol-%d-%d.h5", id, iter);
-
-  Vec u_local;
-  PetscCall(DMGetLocalVector(da, &u_local));
-  PetscCall(DMGlobalToLocal(da, u_global, INSERT_VALUES, u_local));
-
-  PetscViewer viewer;
-  PetscCall(PetscViewerCreate(PETSC_COMM_SELF, &viewer));
-  PetscCall(PetscViewerFileSetName(viewer, filename));
-  PetscCall(PetscViewerSetType(viewer, PETSCVIEWERHDF5));
-  PetscCall(VecView(u_local, viewer));
-  PetscCall(PetscPrintf(PETSC_COMM_SELF, "Saved to %s.\n", filename));
-  PetscCall(PetscViewerDestroy(&viewer));
-  PetscCall(DMRestoreLocalVector(da, &u_local));
-  PetscFunctionReturn(PETSC_SUCCESS);
-#else
-  PetscPrintf("No HDF5\n");
-  PetscFunctionReturn(PETSC_FALSE);
-#endif
-}
-
 // from
 // https://github.com/aadi-bh/parallel/blob/60bfbfa85302bd9cf97ccc123c99032cfb496173/mpi/poisson3d.cc#L493
 /*
  * Writes out a VTK file with the local data in u_global. Corners and
  * coordinates provided by clocal.
  */
-PetscErrorCode writeVTK(DM da, Vec u_global, DM cda, Vec clocal,
-                                      PetscInt iter, PetscReal t, PetscInt c)
+PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global,
+                        PetscInt iter, PetscReal t, PetscInt c)
 {
-  PetscInt id;
-  MPI_Comm_rank(PETSC_COMM_WORLD, &id);
+  PetscMPIInt rank;
+  MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
   char filename[64];
-  snprintf(filename, 64, "sol-%d-%d.vtk", id, iter);
+  snprintf(filename, 64, "sol_%d_%d.vtk", iter, rank);
 
   Vec           u_local;
   PetscScalar **sol;
@@ -309,9 +255,6 @@ PetscErrorCode writeVTK(DM da, Vec u_global, DM cda, Vec clocal,
   // This fills u_local with the latest values, including ghosts.
   PetscCall(DMGlobalToLocal(da, u_global, INSERT_VALUES, u_local));
   PetscCall(DMDAVecGetArrayRead(da, u_local, &sol));
-
-  DMDACoor2d **alc;
-  PetscCall(DMDAVecGetArrayRead(cda, clocal, &alc));
 
   PetscInt ibeg, jbeg, nlocx, nlocy;
   // We are going to save the latest ghost values too.
@@ -328,7 +271,6 @@ PetscErrorCode writeVTK(DM da, Vec u_global, DM cda, Vec clocal,
       objName[c] = '_';
   }
 
-  using namespace std;
   ofstream fout;
   fout.open(filename);
   fout << "# vtk DataFile Version 3.0" << endl;
@@ -345,12 +287,12 @@ PetscErrorCode writeVTK(DM da, Vec u_global, DM cda, Vec clocal,
 
   fout << "X_COORDINATES " << nlocx << " float" << endl;
   for (PetscInt i = ibeg; i < ibeg + nlocx; ++i)
-    fout << alc[jbeg+1][i].x << " ";
+    fout << ctx->coord[jbeg+1][i].x << " ";
   fout << endl;
 
   fout << "Y_COORDINATES " << nlocy << " float" << endl;
   for (PetscInt j = jbeg; j < jbeg + nlocy; ++j)
-    fout << alc[j][ibeg+1].y << " ";
+    fout << ctx->coord[j][ibeg+1].y << " ";
   fout << endl;
 
   fout << "Z_COORDINATES " << 1 << " float" << endl;
@@ -371,7 +313,6 @@ PetscErrorCode writeVTK(DM da, Vec u_global, DM cda, Vec clocal,
   PetscCall(PetscPrintf(PETSC_COMM_SELF, "%s\n", filename));
   PetscCall(DMDAVecRestoreArrayRead(da, u_local, &sol));
   PetscCall(DMRestoreLocalVector(da, &u_local));
-  PetscCall(DMDAVecRestoreArrayRead(cda, clocal, &alc));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
