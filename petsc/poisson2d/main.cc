@@ -11,8 +11,6 @@
 #include <petscdm.h>
 #include <petscsys.h>
 #include <petscvec.h>
-#include <petscviewerhdf5.h>
-#include <stdio.h>
 
 using namespace std;
 
@@ -130,9 +128,8 @@ int main(int argc, char *argv[])
   // PetscOptionsBegin and ...End are macros. They don't have return
   // values, so they can't be used with PetscCall.
   PetscOptionsBegin(PETSC_COMM_WORLD, "jacobi_",
-                    "options for number of grid of points", "");
-  // TODO Put defaults here, and declare them as uninit'd consts above.
-  PetscCall(PetscOptionsInt("-itermax", "Maximum number of iterations",
+                    "User specified options", "");
+  PetscCall(PetscOptionsInt("-iter", "Maximum number of iterations",
                             "main.cc", itermax, &itermax, NULL));
   PetscCall(PetscOptionsReal("-eps", "Step size to halt at", "main.cc", eps,
                              &eps, NULL));
@@ -181,13 +178,8 @@ int main(int argc, char *argv[])
   PetscCall(set_initial_guess(&ctx, da, u_global));
 
   // Save initial condition.
-  writeVTK(&ctx, da, u_global, 0);
+  PetscCall(writeVTK(&ctx, da, u_global, 0));
 
-  /* ----------------------------
-   * END OF SETUP
-   * BEGIN ITERATIONS
-   * ----------------------------
-   */
   // Find the indices to update with Jacobi iterations
   // If the first or last point is on the global boundary then don't update it.
   PetscInt ibeg, jbeg, nlocx, nlocy;
@@ -198,6 +190,11 @@ int main(int argc, char *argv[])
   ctx.uindices[0][1] = (ibeg + nlocx == nx) ? ibeg + nlocx - 1 : ibeg + nlocx;
   ctx.uindices[1][1] = (jbeg + nlocy == ny) ? jbeg + nlocy - 1 : jbeg + nlocy;
 
+  /* ----------------------------
+   * END OF SETUP
+   * BEGIN ITERATIONS
+   * ----------------------------
+   */
   PetscReal maxdelta = 2.0 * eps;
   PetscInt  iter     = 0;
   while (iter < itermax && maxdelta > eps)
@@ -216,8 +213,17 @@ int main(int argc, char *argv[])
     PetscCall(PetscPrintf(PETSC_COMM_WORLD, "iter, maxdelta = %6d, %e\n", iter,
                           maxdelta));
   }
+
+  if(maxdelta > eps)
+  {
+    PetscCall(PetscPrintf(PETSC_COMM_WORLD, 
+                          "WARNING: Converging tolerance not achieved. "));
+    PetscCall(PetscPrintf(PETSC_COMM_WORLD, 
+                          "Try increasing no. of iterations.\n"));
+  }
+
   // Save the last one.
-  writeVTK(&ctx, da, u_global, 1);
+  PetscCall(writeVTK(&ctx, da, u_global, 1));
 
   /* ----------------
    * END OF ITER
