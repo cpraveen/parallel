@@ -26,7 +26,7 @@ struct AppCtx
 };
 
 PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global, 
-                        PetscInt iter, PetscReal t, PetscInt c);
+                        PetscInt iter, PetscInt c);
 
 //------------------------------------------------------------------------------
 PetscReal rhs(PetscInt x, PetscInt y) 
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
   PetscCall(set_initial_guess(&ctx, da, u_global));
 
   // Save initial condition.
-  writeVTK(&ctx, da, u_global, 0, 0, 0);
+  writeVTK(&ctx, da, u_global, 0, 0);
 
   /* ----------------------------
    * END OF SETUP
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
                           maxdelta));
   }
   // Save the last one.
-  writeVTK(&ctx, da, u_global, 1, 0, 0);
+  writeVTK(&ctx, da, u_global, 1, 0);
 
   /* ----------------
    * END OF ITER
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
  * coordinates provided by clocal.
  */
 PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global,
-                        PetscInt iter, PetscReal t, PetscInt c)
+                        PetscInt iter, PetscInt c)
 {
   PetscMPIInt rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -313,6 +313,11 @@ PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global,
   PetscCall(PetscPrintf(PETSC_COMM_SELF, "%s\n", filename));
   PetscCall(DMDAVecRestoreArrayRead(da, u_local, &sol));
   PetscCall(DMRestoreLocalVector(da, &u_local));
+
+  if(rank == 0)
+  {
+    // TODO: create file c.visit which contains list of vtk files
+  }
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
