@@ -82,11 +82,13 @@ PetscErrorCode apply_jacobi(AppCtx *ctx, DM da, Vec u_local,
   PetscScalar **u_new;
   PetscCall(DMDAVecGetArrayWrite(da, u_global, &u_new));
 
-  maxdelta                      = 0.0;
   const PetscReal one_over_dx_squared = 1.0 / (ctx->dx * ctx->dx);
   const PetscReal one_over_dy_squared = 1.0 / (ctx->dy * ctx->dy);
   const PetscReal coefficient = 0.5 / (one_over_dx_squared + one_over_dy_squared);
 
+  // Loop over interior points, dont update boundary points where dirichlet
+  // bc is specified.
+  maxdelta = 0.0;
   for (PetscInt j = ctx->uindices[1][0]; j < ctx->uindices[1][1]; ++j)
     for (PetscInt i = ctx->uindices[0][0]; i < ctx->uindices[0][1]; ++i)
     {
@@ -196,8 +198,8 @@ int main(int argc, char *argv[])
   ctx.uindices[0][1] = (ibeg + nlocx == nx) ? ibeg + nlocx - 1 : ibeg + nlocx;
   ctx.uindices[1][1] = (jbeg + nlocy == ny) ? jbeg + nlocy - 1 : jbeg + nlocy;
 
-  PetscReal     maxdelta = 2.0 * eps;
-  PetscInt      iter     = 0;
+  PetscReal maxdelta = 2.0 * eps;
+  PetscInt  iter     = 0;
   while (iter < itermax && maxdelta > eps)
   {
     // Transfer data from global to local array.
@@ -310,7 +312,7 @@ PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global, PetscInt c)
 
   if(rank == 0)
   {
-    // TODO: create file c.visit which contains list of vtk files
+    // create file c.visit which contains list of vtk files
     char visit[64];
     snprintf(visit, 64, "%d.visit", c);
 
@@ -326,6 +328,7 @@ PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global, PetscInt c)
       snprintf(filename, 64, "sol_%d_%d.vtk", c, i);
       fvis << filename << endl;
     }
+    fvis.close();
     cout << "Wrote file " << visit << endl;
   }
 
