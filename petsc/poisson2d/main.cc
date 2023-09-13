@@ -5,6 +5,7 @@
  *
  *  Date: Friday, September 8th, 2023.
  */
+#include <iostream>
 #include <fstream>
 #include <petsc.h>
 #include <petscdm.h>
@@ -25,8 +26,7 @@ struct AppCtx
   DMDACoor2d **coord;
 };
 
-PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global, 
-                        PetscInt iter, PetscInt c);
+PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global, PetscInt c);
 
 //------------------------------------------------------------------------------
 PetscReal rhs(PetscInt x, PetscInt y) 
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
   PetscCall(set_initial_guess(&ctx, da, u_global));
 
   // Save initial condition.
-  writeVTK(&ctx, da, u_global, 0, 0);
+  writeVTK(&ctx, da, u_global, 0);
 
   /* ----------------------------
    * END OF SETUP
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
                           maxdelta));
   }
   // Save the last one.
-  writeVTK(&ctx, da, u_global, 1, 0);
+  writeVTK(&ctx, da, u_global, 1);
 
   /* ----------------
    * END OF ITER
@@ -241,13 +241,12 @@ int main(int argc, char *argv[])
  * Writes out a VTK file with the local data in u_global. Corners and
  * coordinates provided by clocal.
  */
-PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global,
-                        PetscInt iter, PetscInt c)
+PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global, PetscInt c)
 {
   PetscMPIInt rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
   char filename[64];
-  snprintf(filename, 64, "sol_%d_%d.vtk", iter, rank);
+  snprintf(filename, 64, "sol_%d_%d.vtk", c, rank);
 
   Vec           u_local;
   PetscScalar **sol;
@@ -277,11 +276,7 @@ PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global,
   fout << "Cartesian grid" << endl;
   fout << "ASCII" << endl;
   fout << "DATASET RECTILINEAR_GRID" << endl;
-  fout << "FIELD FieldData 2" << endl;
-  fout << "TIME 1 1 double" << endl;
-  fout << t << endl;
-  fout << "CYCLE 1 1 int" << endl;
-  fout << c << endl;
+
   // 1 for Z because this is 2D
   fout << "DIMENSIONS " << nlocx << " " << nlocy << " " << 1 << endl;
 
@@ -310,13 +305,28 @@ PetscErrorCode writeVTK(AppCtx *ctx, DM da, Vec u_global,
   fout << endl;
   fout.close();
 
-  PetscCall(PetscPrintf(PETSC_COMM_SELF, "%s\n", filename));
   PetscCall(DMDAVecRestoreArrayRead(da, u_local, &sol));
   PetscCall(DMRestoreLocalVector(da, &u_local));
 
   if(rank == 0)
   {
     // TODO: create file c.visit which contains list of vtk files
+    char visit[64];
+    snprintf(visit, 64, "%d.visit", c);
+
+    PetscMPIInt nprocs;
+    MPI_Comm_size(PETSC_COMM_WORLD, &nprocs);
+
+    ofstream fvis;
+    fvis.open(visit);
+    fvis << "!NBLOCKS " << nprocs << endl;
+
+    for(PetscMPIInt i=0; i<nprocs; ++i)
+    {
+      snprintf(filename, 64, "sol_%d_%d.vtk", c, i);
+      fvis << filename << endl;
+    }
+    cout << "Wrote file " << visit << endl;
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
