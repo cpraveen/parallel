@@ -1,5 +1,7 @@
 # PETSc
 
+We need to know where Petsc is installed, set the variable `PETSC_DIR` to point to the location of your Petsc installation. The makefiles will use this variable.
+
 ```shell
 make hello
 ./hello -help
