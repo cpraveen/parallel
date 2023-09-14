@@ -2,3 +2,4 @@
 
  * Openmp
  * MPI
+ * PETSc
