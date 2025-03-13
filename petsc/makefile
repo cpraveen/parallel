@@ -1,9 +1,21 @@
-TARGETS = hello
+ifndef PETSC_DIR
+$(error "PETSC_DIR is not set")
+endif
 
-all: $(TARGETS)
+CC = mpicc
+CFLAGS = -O3 -Wall -I$(PETSC_DIR)/include
+LDFLAGS = -lpetsc -L$(PETSC_DIR)/lib -lm
+OS := $(shell uname)
+ifeq ($(OS),Linux)
+	LDFLAGS += -Wl,-rpath=$(PETSC_DIR)/lib
+endif
 
-hello: hello.c
-	mpicc -o hello hello.c -I$(PETSC_DIR)/include -L$(PETSC_DIR)/lib -lpetsc
+TARGET = hello
+
+all: $(TARGET)
+
+$(TARGET): $(TARGET).c
+	$(CC) $(CFLAGS) -o $(TARGET) $< $(LDFLAGS)
 
 clean:
-	rm -rf $(TARGETS) *.o
+	rm -f *.o $(TARGET)
