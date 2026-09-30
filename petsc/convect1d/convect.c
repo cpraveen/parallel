@@ -67,31 +67,31 @@ PetscErrorCode savesol(const int nx, const double dx, Vec ug)
 {
    int i, rank;
    static int count = 0;
-   PetscErrorCode ierr;
 
+   PetscFunctionBeginUser;
    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
    // Gather entire solution on rank=0 process. This is bad thing to do
    // in a real application.
    VecScatter ctx;
    Vec        uall;
-   ierr = VecScatterCreateToZero(ug,&ctx,&uall); CHKERRQ(ierr);
+   PetscCall(VecScatterCreateToZero(ug,&ctx,&uall));
    // scatter as many times as you need
-   ierr = VecScatterBegin(ctx,ug,uall,INSERT_VALUES,SCATTER_FORWARD); CHKERRQ(ierr);
-   ierr = VecScatterEnd(ctx,ug,uall,INSERT_VALUES,SCATTER_FORWARD); CHKERRQ(ierr);
+   PetscCall(VecScatterBegin(ctx,ug,uall,INSERT_VALUES,SCATTER_FORWARD));
+   PetscCall(VecScatterEnd(ctx,ug,uall,INSERT_VALUES,SCATTER_FORWARD));
    // destroy scatter context and local vector when no longer needed
-   ierr = VecScatterDestroy(&ctx); CHKERRQ(ierr);
+   PetscCall(VecScatterDestroy(&ctx));
    if(rank==0)
    {
       PetscScalar *uarray;
-      ierr = VecGetArray(uall, &uarray); CHKERRQ(ierr);
+      PetscCall(VecGetArray(uall, &uarray));
       FILE *f;
       f = fopen("sol.dat","w");
       for(i=0; i<nx; ++i)
          fprintf(f, "%e %e\n", xmin+i*dx+0.5*dx, uarray[i]);
       fclose(f);
       PetscPrintf(PETSC_COMM_WORLD,"Wrote solution into sol.dat\n");
-      ierr = VecRestoreArray(uall, &uarray); CHKERRQ(ierr);
+      PetscCall(VecRestoreArray(uall, &uarray));
       if(count==0)
       {
          // Initial solution is copied to sol0.dat
@@ -100,14 +100,13 @@ PetscErrorCode savesol(const int nx, const double dx, Vec ug)
          count = 1;
       }
    }
-   ierr = VecDestroy(&uall); CHKERRQ(ierr);
-   return(0);
+   PetscCall(VecDestroy(&uall));
+   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-   PetscErrorCode ierr;
    DM       da;
    Vec      ug; // global vector
    Vec      ul; // local vector
@@ -118,39 +117,40 @@ int main(int argc, char *argv[])
    PetscMPIInt rank, size;
    PetscReal cfl = 0.4;
 
-   ierr = PetscInitialize(&argc, &argv, (char*)0, help); CHKERRQ(ierr);
+   PetscFunctionBeginUser;
+   PetscCall(PetscInitialize(&argc, &argv, (char*)0, help));
 
    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
    MPI_Comm_size(PETSC_COMM_WORLD, &size);
 
-   ierr = DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC, nx, ndof, sw,
-                       NULL, &da); CHKERRQ(ierr);
-   ierr = DMSetFromOptions(da); CHKERRQ(ierr);
-   ierr = DMSetUp(da); CHKERRQ(ierr);
+   PetscCall(DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC, nx, ndof, sw,
+                          NULL, &da));
+   PetscCall(DMSetFromOptions(da));
+   PetscCall(DMSetUp(da));
 
-   ierr = DMCreateGlobalVector(da, &ug); CHKERRQ(ierr);
+   PetscCall(DMCreateGlobalVector(da, &ug));
 
-   ierr = DMDAGetCorners(da, &ibeg, 0, 0, &nloc, 0, 0); CHKERRQ(ierr);
-   ierr = DMDAGetInfo(da,0,&nx,0,0,0,0,0,0,0,0,0,0,0); CHKERRQ(ierr);
+   PetscCall(DMDAGetCorners(da, &ibeg, 0, 0, &nloc, 0, 0));
+   PetscCall(DMDAGetInfo(da,0,&nx,0,0,0,0,0,0,0,0,0,0,0));
    PetscReal dx = (xmax - xmin) / (PetscReal)(nx);
    PetscPrintf(PETSC_COMM_WORLD,"nx = %d, dx = %e\n", nx, dx);
    for(i=ibeg; i<ibeg+nloc; ++i)
    {
       PetscReal x = xmin + i*dx + 0.5*dx;
       PetscReal v = initcond(x);
-      ierr = VecSetValues(ug,1,&i,&v,INSERT_VALUES); CHKERRQ(ierr);
+      PetscCall(VecSetValues(ug,1,&i,&v,INSERT_VALUES));
    }
-   ierr = VecAssemblyBegin(ug);  CHKERRQ(ierr);
-   ierr = VecAssemblyEnd(ug);    CHKERRQ(ierr);
+   PetscCall(VecAssemblyBegin(ug));
+   PetscCall(VecAssemblyEnd(ug));
 
    // save initial condition
-   ierr = savesol(nx, dx, ug); CHKERRQ(ierr);
+   PetscCall(savesol(nx, dx, ug));
 
    // Get local view
-   ierr = DMGetLocalVector(da, &ul); CHKERRQ(ierr);
+   PetscCall(DMGetLocalVector(da, &ul));
 
    PetscInt il, nl;
-   ierr = DMDAGetGhostCorners(da,&il,0,0,&nl,0,0); CHKERRQ(ierr);
+   PetscCall(DMDAGetGhostCorners(da,&il,0,0,&nl,0,0));
 
    PetscReal res[nloc], uold[nloc];
    PetscReal dt = cfl * dx;
@@ -166,14 +166,14 @@ int main(int argc, char *argv[])
       }
       for(int rk=0; rk<3; ++rk) // loop for rk stages
       {
-         ierr = DMGlobalToLocalBegin(da, ug, INSERT_VALUES, ul); CHKERRQ(ierr);
-         ierr = DMGlobalToLocalEnd(da, ug, INSERT_VALUES, ul); CHKERRQ(ierr);
+         PetscCall(DMGlobalToLocalBegin(da, ug, INSERT_VALUES, ul));
+         PetscCall(DMGlobalToLocalEnd(da, ug, INSERT_VALUES, ul));
 
          PetscScalar *u;
-         ierr = DMDAVecGetArrayRead(da, ul, &u); CHKERRQ(ierr);
+         PetscCall(DMDAVecGetArrayRead(da, ul, &u));
 
          PetscScalar *unew;
-         ierr = DMDAVecGetArray(da, ug, &unew); CHKERRQ(ierr);
+         PetscCall(DMDAVecGetArray(da, ug, &unew));
 
          // First stage, store solution at time level n into uold
          if(rk==0)
@@ -209,19 +209,20 @@ int main(int argc, char *argv[])
             unew[i] = ark[rk]*uold[i-ibeg]
                       + (1.0-ark[rk])*(u[i] - lam * res[i-ibeg]);
 
-         ierr = DMDAVecRestoreArrayRead(da, ul, &u); CHKERRQ(ierr);
-         ierr = DMDAVecRestoreArray(da, ug, &unew); CHKERRQ(ierr);
+         PetscCall(DMDAVecRestoreArrayRead(da, ul, &u));
+         PetscCall(DMDAVecRestoreArray(da, ug, &unew));
       }
 
       t += dt;
       PetscPrintf(PETSC_COMM_WORLD,"t = %f\n", t);
    }
 
-   ierr = savesol(nx, dx, ug); CHKERRQ(ierr);
+   PetscCall(savesol(nx, dx, ug));
 
    // Destroy everything before finishing
-   ierr = DMDestroy(&da); CHKERRQ(ierr);
-   ierr = VecDestroy(&ug); CHKERRQ(ierr);
+   PetscCall(DMDestroy(&da));
+   PetscCall(VecDestroy(&ug));
 
-   ierr = PetscFinalize(); CHKERRQ(ierr);
+   PetscCall(PetscFinalize());
+   return 0;
 }
