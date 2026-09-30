@@ -4,13 +4,13 @@
 //------------------------------------------------------------------------------
 PetscErrorCode savesol(int *c, Vec ug)
 {
-   PetscErrorCode ierr;
    char           filename[32] = "sol";
    PetscViewer    viewer;
+   PetscFunctionBeginUser;
    sprintf(filename, "sol%03d.h5", *c);
-   ierr = PetscViewerHDF5Open(PETSC_COMM_WORLD, filename, FILE_MODE_WRITE, &viewer);  CHKERRQ(ierr);
-   ierr = VecView(ug, viewer); CHKERRQ(ierr);
-   ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
+   PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, filename, FILE_MODE_WRITE, &viewer));
+   PetscCall(VecView(ug, viewer));
+   PetscCall(PetscViewerDestroy(&viewer));
    ++(*c);
-   return(0);
+   PetscFunctionReturn(PETSC_SUCCESS);
 }

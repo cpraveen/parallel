@@ -1,7 +1,6 @@
 //------------------------------------------------------------------------------
 PetscErrorCode savesol_vtk(int *c, double t, DM da, Vec ug)
 {
-   PetscErrorCode ierr;
    char           filename[32] = "sol";
    PetscMPIInt    rank;
    PetscInt       i, j, ibeg, jbeg, nlocx, nlocy;
@@ -9,11 +8,12 @@ PetscErrorCode savesol_vtk(int *c, double t, DM da, Vec ug)
    Vec            ul;
    PetscScalar    **u;
 
-   ierr = DMGetLocalVector(da, &ul); CHKERRQ(ierr);
-   ierr = DMGlobalToLocalBegin(da, ug, INSERT_VALUES, ul); CHKERRQ(ierr);
-   ierr = DMGlobalToLocalEnd(da, ug, INSERT_VALUES, ul); CHKERRQ(ierr);
-   ierr = DMDAVecGetArray(da, ul, &u); CHKERRQ(ierr);
-   ierr = DMDAGetCorners(da, &ibeg, &jbeg, 0, &nlocx, &nlocy, 0); CHKERRQ(ierr);
+   PetscFunctionBeginUser;
+   PetscCall(DMGetLocalVector(da, &ul));
+   PetscCall(DMGlobalToLocalBegin(da, ug, INSERT_VALUES, ul));
+   PetscCall(DMGlobalToLocalEnd(da, ug, INSERT_VALUES, ul));
+   PetscCall(DMDAVecGetArray(da, ul, &u));
+   PetscCall(DMDAGetCorners(da, &ibeg, &jbeg, 0, &nlocx, &nlocy, 0));
 
    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
    sprintf(filename, "sol-%03d-%03d.vtk", *c, rank);
@@ -56,9 +56,9 @@ PetscErrorCode savesol_vtk(int *c, double t, DM da, Vec ug)
       }
    fclose(fp);
 
-   ierr = DMDAVecRestoreArray(da, ul, &u); CHKERRQ(ierr);
-   ierr = DMRestoreLocalVector(da, &ul); CHKERRQ(ierr);
+   PetscCall(DMDAVecRestoreArray(da, ul, &u));
+   PetscCall(DMRestoreLocalVector(da, &ul));
 
    ++(*c);
-   return(0);
+   PetscFunctionReturn(PETSC_SUCCESS);
 }
