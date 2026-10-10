@@ -15,6 +15,9 @@ or pure Neumman boundary conditions
 
 This uses multigrid to solve the linear system.
 The grid is vertex-centered so there are grid points on the boundary.
+
+Run this as
+   ./ex29 -da_grid_x 100 -da_grid_y 100 -view vtk:sol.vts
 */
 
 static char help[] = "Solves 2D Laplacian using multigrid.\n\n";
@@ -68,7 +71,6 @@ main(int argc, char** argv)
    PetscCall(DMSetFromOptions(da));
    PetscCall(DMSetUp(da));
    PetscCall(DMDASetUniformCoordinates(da, 0, 1, 0, 1, 0, 0));
-   PetscCall(DMDASetFieldName(da, 0, "Pressure"));
 
    user.nu = 0.1;
    bc = (PetscInt)DIRICHLET;
@@ -88,7 +90,7 @@ main(int argc, char** argv)
 
    PetscCall(KSPGetSolution(ksp, &x));
    PetscCall(PetscObjectSetName((PetscObject)x, "Pressure"));
-   PetscCall(VecViewFromOptions(x, NULL, "-solution_view"));
+   PetscCall(VecViewFromOptions(x, NULL, "-view"));
    PetscCall(VecDestroy(&x));
 
    PetscCall(KSPDestroy(&ksp));

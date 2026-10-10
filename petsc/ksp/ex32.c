@@ -16,12 +16,14 @@ This uses multigrid to solve the linear system
        Contributed by Andrei Draganescu <aidraga@sandia.gov>
 
 Note the nice multigrid convergence despite the fact it is only using
-piecewise constant interpolation/restriction. This is because cell-centered multigrid
-does not need the same rule:
+piecewise constant interpolation/restriction. This is because cell-centered multigrid does not need the same rule:
 
     polynomial degree(interpolation) + polynomial degree(restriction) + 2 > degree of PDE
 
 that vertex based multigrid needs.
+
+Run this as
+   ./ex32 -da_grid_x 100 -da_grid_y 100 -view vtk:sol.vts
 */
 
 static char help[] = "Solves 2D Laplacian using multigrid.\n\n";
@@ -60,6 +62,7 @@ main(int argc, char** argv)
 {
    KSP         ksp;
    DM          da;
+   Vec         x;
    UserContext user;
    const char* bcTypes[2] = {"dirichlet", "neumann"};
    PetscInt    bc;
@@ -73,6 +76,7 @@ main(int argc, char** argv)
    PetscCall(DMDASetInterpolationType(da, DMDA_Q0));
    PetscCall(DMSetFromOptions(da));
    PetscCall(DMSetUp(da));
+   PetscCall(DMDASetUniformCoordinates(da, 0, 1, 0, 1, 0, 0)); // off by h/2
 
    user.nu = 0.1;
    bc = (PetscInt)NEUMANN;
@@ -89,6 +93,11 @@ main(int argc, char** argv)
    PetscCall(KSPSetFromOptions(ksp));
    PetscCall(KSPSetUp(ksp));
    PetscCall(KSPSolve(ksp, NULL, NULL));
+
+   PetscCall(KSPGetSolution(ksp, &x));
+   PetscCall(PetscObjectSetName((PetscObject)x, "Pressure"));
+   PetscCall(VecViewFromOptions(x, NULL, "-view"));
+
    PetscCall(KSPDestroy(&ksp));
    PetscCall(DMDestroy(&da));
    PetscCall(PetscFinalize());
