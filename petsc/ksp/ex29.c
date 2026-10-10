@@ -53,6 +53,7 @@ main(int argc, char** argv)
 {
    KSP         ksp;
    DM          da;
+   Vec         x;
    UserContext user;
    const char* bcTypes[2] = {"dirichlet", "neumann"};
    PetscInt    bc;
@@ -84,6 +85,12 @@ main(int argc, char** argv)
    PetscCall(KSPSetFromOptions(ksp));
    PetscCall(KSPSetUp(ksp));
    PetscCall(KSPSolve(ksp, NULL, NULL));
+
+   PetscCall(KSPGetSolution(ksp, &x));
+   PetscCall(PetscObjectSetName((PetscObject)x, "Pressure"));
+   PetscCall(VecViewFromOptions(x, NULL, "-solution_view"));
+   PetscCall(VecDestroy(&x));
+
    PetscCall(KSPDestroy(&ksp));
    PetscCall(DMDestroy(&da));
    PetscCall(PetscFinalize());

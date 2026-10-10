@@ -117,7 +117,7 @@ ComputeRHS(KSP ksp, Vec b, void* ctx)
       {
          x = ((PetscReal)i + 0.5) * Hx;
          y = ((PetscReal)j + 0.5) * Hy;
-         array[j][i] = RHSFun(x, y) * Hx * Hy;
+         array[j][i] = RHSFun(x, y, user) * Hx * Hy;
       }
    }
    PetscCall(DMDAVecRestoreArray(da, b, &array));
