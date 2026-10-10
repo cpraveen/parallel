@@ -13,7 +13,8 @@ with Dirichlet boundary conditions
 
 or pure Neumman boundary conditions
 
-This uses multigrid to solve the linear system
+This uses multigrid to solve the linear system.
+The grid is vertex-centered so there are grid points on the boundary.
 */
 
 static char help[] = "Solves 2D Laplacian using multigrid.\n\n";
