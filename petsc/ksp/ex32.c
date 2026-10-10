@@ -23,6 +23,7 @@ piecewise constant interpolation/restriction. This is because cell-centered mult
 that vertex based multigrid needs.
 
 Run this as
+   ./ex32 -da_refine 7 -view vtk:sol.vts
    ./ex32 -da_grid_x 100 -da_grid_y 100 -view vtk:sol.vts
 */
 

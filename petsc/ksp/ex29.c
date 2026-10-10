@@ -17,6 +17,7 @@ This uses multigrid to solve the linear system.
 The grid is vertex-centered so there are grid points on the boundary.
 
 Run this as
+   ./ex29 -da_refine 7 -view vtk:sol.vts
    ./ex29 -da_grid_x 100 -da_grid_y 100 -view vtk:sol.vts
 */
 
